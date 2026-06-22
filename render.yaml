@@ -9,7 +9,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: 22.22.0
+        value: 20.18.0
       - key: NODE_ENV
         value: production
       - key: STORAGE_PROVIDER
