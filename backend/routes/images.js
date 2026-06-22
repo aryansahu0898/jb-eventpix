@@ -19,6 +19,21 @@ const detectFaces = require('../utils/faceDetect');
 const router = express.Router();
 
 /**
+ * Gets a safe image format from an uploaded filename or mimetype.
+ * @param {Express.Multer.File} file
+ * @returns {string}
+ */
+function getImageFormat(file) {
+  const extension = file.originalname.split('.').pop();
+
+  if (extension && /^[a-z0-9]+$/i.test(extension)) {
+    return extension.toLowerCase() === 'jpeg' ? 'jpg' : extension.toLowerCase();
+  }
+
+  return file.mimetype.split('/').pop() || 'jpg';
+}
+
+/**
  * Sends validation errors if the request is invalid.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -48,7 +63,8 @@ async function processUploadedImage(eventId, file) {
   const detections = await detectFaces(file.buffer);
   const uploadResult = await uploadBuffer(file.buffer, {
     folder: `jb-function-capture/events/${eventId}`,
-    public_id: `${Date.now()}-${file.originalname.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-')}`
+    public_id: `${Date.now()}-${file.originalname.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-')}`,
+    format: getImageFormat(file)
   });
 
   const image = await Image.create({

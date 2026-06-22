@@ -1,5 +1,5 @@
 /**
- * JB Function Capture server entry point.
+ * J.B. EventPix server entry point.
  */
 
 require('dotenv').config();
@@ -12,6 +12,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/db');
+const { localUploadRoot } = require('./config/cloudinary');
 const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
@@ -21,7 +22,30 @@ const imageRoutes = require('./routes/images');
 // Section: App Setup
 const app = express();
 const frontendDirectory = path.join(__dirname, '../frontend');
-const allowedOrigin = process.env.FRONTEND_URL;
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(function normalizeOrigin(origin) {
+    return origin.trim();
+  })
+  .filter(Boolean);
+
+/**
+ * Checks whether the request comes from a localhost development origin.
+ * @param {string} origin
+ * @returns {boolean}
+ */
+function isLocalDevelopmentOrigin(origin) {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    return ['localhost', '127.0.0.1', '::1'].includes(parsedOrigin.hostname);
+  } catch (error) {
+    return false;
+  }
+}
 
 /**
  * Checks whether a request origin is allowed.
@@ -30,7 +54,7 @@ const allowedOrigin = process.env.FRONTEND_URL;
  * @returns {void}
  */
 function validateCorsOrigin(origin, callback) {
-  if (!origin || !allowedOrigin || origin === allowedOrigin) {
+  if (!origin || allowedOrigins.includes(origin) || isLocalDevelopmentOrigin(origin)) {
     callback(null, true);
     return;
   }
@@ -97,6 +121,7 @@ async function startServer() {
   app.use('/api/images', imageRoutes);
   app.use('/api/face-match', faceMatchRoutes);
 
+  app.use('/uploads', express.static(localUploadRoot));
   app.use(express.static(frontendDirectory));
 
   app.get('/', function sendHomepage(req, res) {
@@ -111,7 +136,7 @@ async function startServer() {
 
   const port = Number(process.env.PORT) || 5000;
   app.listen(port, function onListen() {
-    console.log(`JB Function Capture API running on port ${port}`);
+    console.log(`J.B. EventPix API running on port ${port}`);
   });
 }
 

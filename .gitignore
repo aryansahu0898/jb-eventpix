@@ -1,0 +1,14 @@
+# System files
+.DS_Store
+
+# Environment files
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Dependencies
+backend/node_modules
+backend/uploads
+
+# Build artifacts
+*.zip

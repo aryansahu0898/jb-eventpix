@@ -16,9 +16,22 @@ faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 
 const localModelPath = process.env.FACE_MODEL_PATH || path.join(__dirname, '../../frontend/assets/models');
 const remoteModelPath = process.env.FACE_MODEL_REMOTE_URL || 'https://justadudewhohacks.github.io/face-api.js/models';
+const wasmBinaryDirectory = path.dirname(require.resolve('@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm'));
 let modelsLoaded = false;
 let modelLoadPromise = null;
 let backendReady = false;
+
+/**
+ * Returns local TensorFlow WASM binary paths so server face detection works offline.
+ * @returns {{ [fileName: string]: string }}
+ */
+function getLocalWasmFileMap() {
+  return {
+    'tfjs-backend-wasm.wasm': path.join(wasmBinaryDirectory, 'tfjs-backend-wasm.wasm'),
+    'tfjs-backend-wasm-simd.wasm': path.join(wasmBinaryDirectory, 'tfjs-backend-wasm-simd.wasm'),
+    'tfjs-backend-wasm-threaded-simd.wasm': path.join(wasmBinaryDirectory, 'tfjs-backend-wasm-threaded-simd.wasm')
+  };
+}
 
 /**
  * Initializes the TensorFlow WASM backend for Node.js face processing.
@@ -29,7 +42,7 @@ async function ensureBackendReady() {
     return;
   }
 
-  wasm.setWasmPaths('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/');
+  wasm.setWasmPaths(getLocalWasmFileMap());
   await tf.setBackend('wasm');
   await tf.ready();
   backendReady = true;

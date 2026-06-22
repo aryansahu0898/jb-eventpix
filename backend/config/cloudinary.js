@@ -2,8 +2,14 @@
  * Cloudinary configuration and helpers.
  */
 
+const fs = require('fs/promises');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
+
+// Section: Storage Mode
+const storageProvider = process.env.STORAGE_PROVIDER || 'cloudinary';
+const localUploadRoot = path.join(__dirname, '../uploads');
+const isLocalStorage = storageProvider === 'local';
 
 // Section: Base Configuration
 cloudinary.config({
@@ -14,12 +20,55 @@ cloudinary.config({
 });
 
 /**
- * Uploads an image buffer to Cloudinary.
+ * Normalizes public ids so they are safe for local filesystem storage.
+ * @param {string} value
+ * @returns {string}
+ */
+function sanitizePublicId(value) {
+  return value
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter(Boolean)
+    .map(function sanitizePart(part) {
+      return part.replace(/[^a-z0-9_.-]+/gi, '-');
+    })
+    .join('/');
+}
+
+/**
+ * Writes an image buffer to local disk for offline testing.
+ * @param {Buffer} buffer
+ * @param {import('cloudinary').UploadApiOptions} options
+ * @returns {Promise<{ public_id: string, secure_url: string }>}
+ */
+async function uploadLocalBuffer(buffer, options = {}) {
+  const folder = sanitizePublicId(options.folder || 'jb-function-capture');
+  const rawPublicId = sanitizePublicId(options.public_id || `${Date.now()}-image`);
+  const extension = String(options.format || path.extname(rawPublicId).slice(1) || 'jpg').replace(/^\./, '');
+  const publicId = rawPublicId.endsWith(`.${extension}`) ? rawPublicId : `${rawPublicId}.${extension}`;
+  const relativePath = path.join(folder, publicId);
+  const absolutePath = path.join(localUploadRoot, relativePath);
+
+  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.writeFile(absolutePath, buffer);
+
+  return {
+    public_id: relativePath.replace(/\\/g, '/'),
+    secure_url: `/uploads/${relativePath.replace(/\\/g, '/')}`
+  };
+}
+
+/**
+ * Uploads an image buffer to the configured storage provider.
  * @param {Buffer} buffer
  * @param {import('cloudinary').UploadApiOptions} [options]
- * @returns {Promise<import('cloudinary').UploadApiResponse>}
+ * @returns {Promise<import('cloudinary').UploadApiResponse | { public_id: string, secure_url: string }>}
  */
 function uploadBuffer(buffer, options = {}) {
+  if (isLocalStorage) {
+    return uploadLocalBuffer(buffer, options);
+  }
+
   return new Promise(function resolveUpload(resolve, reject) {
     const uploadStream = cloudinary.uploader.upload_stream({
       folder: 'jb-function-capture',
@@ -41,12 +90,16 @@ function uploadBuffer(buffer, options = {}) {
 }
 
 /**
- * Creates a signed Cloudinary delivery URL.
+ * Creates an optimized delivery URL for the configured storage provider.
  * @param {string} publicId
  * @param {number} width
  * @returns {string}
  */
 function buildOptimizedImageUrl(publicId, width) {
+  if (isLocalStorage) {
+    return `/uploads/${publicId}`;
+  }
+
   return cloudinary.url(publicId, {
     secure: true,
     sign_url: true,
@@ -59,13 +112,18 @@ function buildOptimizedImageUrl(publicId, width) {
 }
 
 /**
- * Tries to derive a Cloudinary public id from a delivery URL.
+ * Tries to derive a storage public id from a delivery URL.
  * @param {string} url
  * @returns {string | null}
  */
 function extractPublicId(url) {
   if (!url) {
     return null;
+  }
+
+  if (isLocalStorage) {
+    const parsedLocal = url.match(/\/uploads\/(.+)$/);
+    return parsedLocal ? parsedLocal[1].split('?')[0] : null;
   }
 
   const parsed = url.match(/\/image\/(?:upload|authenticated|private)\/(.+)/);
@@ -83,12 +141,17 @@ function extractPublicId(url) {
 }
 
 /**
- * Deletes a Cloudinary asset when a public id is available.
+ * Deletes an asset when a public id is available.
  * @param {string | null | undefined} publicId
  * @returns {Promise<void>}
  */
 async function deleteAsset(publicId) {
   if (!publicId) {
+    return;
+  }
+
+  if (isLocalStorage) {
+    await fs.rm(path.join(localUploadRoot, publicId), { force: true });
     return;
   }
 
@@ -104,5 +167,7 @@ module.exports = {
   uploadBuffer,
   buildOptimizedImageUrl,
   extractPublicId,
-  deleteAsset
+  deleteAsset,
+  isLocalStorage,
+  localUploadRoot
 };

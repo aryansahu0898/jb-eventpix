@@ -185,6 +185,12 @@ function renderCharts(events) {
     return new Date(b.date) - new Date(a.date);
   }).slice(0, 6).reverse();
 
+  if (!window.Chart) {
+    renderChartFallback(distributionContext, 'Charts are unavailable offline. Dashboard data and uploads still work.');
+    renderChartFallback(recentContext, 'Charts are unavailable offline. Event data is shown in the table below.');
+    return;
+  }
+
   if (dashboardState.charts.distribution) {
     dashboardState.charts.distribution.destroy();
   }
@@ -198,7 +204,7 @@ function renderCharts(events) {
       labels: chartLabels,
       datasets: [{
         data: imageCounts,
-        backgroundColor: ['#F5C200', '#FFE37A', '#F3B500', '#FFD54C', '#FFC107', '#FFE9A8'],
+        backgroundColor: ['#E51F2F', '#FF6B78', '#B80F1D', '#FF9AA4', '#D7192A', '#FFE7EA'],
         borderWidth: 0
       }]
     },
@@ -218,7 +224,7 @@ function renderCharts(events) {
       datasets: [{
         label: 'Images',
         data: recentEvents.map(function mapEventCount(event) { return event.imageCount || 0; }),
-        backgroundColor: '#F5C200',
+        backgroundColor: '#E51F2F',
         borderRadius: 10
       }]
     },
@@ -238,6 +244,25 @@ function renderCharts(events) {
       }
     }
   });
+}
+
+/**
+ * Replaces a chart canvas with a readable offline fallback.
+ * @param {HTMLCanvasElement} canvas
+ * @param {string} message
+ * @returns {void}
+ */
+function renderChartFallback(canvas, message) {
+  const card = canvas.closest('.chart-card');
+
+  canvas.classList.add('hidden');
+
+  if (card && !card.querySelector('.chart-fallback')) {
+    const fallback = document.createElement('p');
+    fallback.className = 'text-muted chart-fallback';
+    fallback.textContent = message;
+    card.appendChild(fallback);
+  }
 }
 
 /**

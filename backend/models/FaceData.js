@@ -23,8 +23,7 @@ const faceDataSchema = new mongoose.Schema({
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event',
-    required: true,
-    index: true
+    required: true
   },
   descriptor: {
     type: [Number],

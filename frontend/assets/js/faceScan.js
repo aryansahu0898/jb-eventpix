@@ -95,7 +95,7 @@ async function loadModels() {
   }
 
   if (!window.faceapi) {
-    throw new Error('face-api.js failed to load from the CDN.');
+    throw new Error('face-api.js failed to load. Please check the local vendor bundle.');
   }
 
   if (!scanState.modelLoadPromise) {
@@ -353,8 +353,8 @@ function renderDetections(canvas, media, detections) {
     const box = detection.detection.box;
     const score = Math.round(detection.detection.score * 100);
 
-    context.strokeStyle = '#F5C200';
-    context.fillStyle = 'rgba(245, 194, 0, 0.18)';
+    context.strokeStyle = '#E51F2F';
+    context.fillStyle = 'rgba(229, 31, 47, 0.16)';
     context.strokeRect(box.x, box.y, box.width, box.height);
     context.fillRect(box.x, box.y - 28, 96, 24);
     context.fillStyle = '#1A1A1A';

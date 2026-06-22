@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: jb-eventpix
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_PROVIDER
+        value: cloudinary
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: FACE_MODEL_REMOTE_URL
+        value: https://justadudewhohacks.github.io/face-api.js/models
