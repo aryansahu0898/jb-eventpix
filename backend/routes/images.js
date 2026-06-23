@@ -114,6 +114,10 @@ async function processUploadedImage(eventId, file) {
   });
   const detectionResult = await detectFacesSafely(file.buffer, file.originalname);
   const detections = detectionResult.detections;
+  const storageWarning = uploadResult.secure_url && uploadResult.secure_url.startsWith('/uploads/') && process.env.STORAGE_PROVIDER !== 'local'
+    ? 'Cloudinary failed or is not configured; saved to temporary local storage. Files may disappear after redeploy or restart.'
+    : '';
+  const warning = [storageWarning, detectionResult.warning].filter(Boolean).join(' ');
 
   const image = await Image.create({
     eventId,
@@ -146,7 +150,7 @@ async function processUploadedImage(eventId, file) {
     url: image.url,
     thumbnailUrl: image.thumbnailUrl,
     originalName: file.originalname,
-    warning: detectionResult.warning || undefined
+    warning: warning || undefined
   };
 }
 

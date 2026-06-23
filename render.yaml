@@ -14,6 +14,8 @@ services:
         value: production
       - key: STORAGE_PROVIDER
         value: cloudinary
+      - key: ALLOW_LOCAL_STORAGE_FALLBACK
+        value: "true"
       - key: MONGODB_URI
         sync: false
       - key: JWT_ACCESS_SECRET

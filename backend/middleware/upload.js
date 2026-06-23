@@ -3,9 +3,19 @@
  */
 
 const multer = require('multer');
+const path = require('path');
 
 // Section: Configuration
 const storage = multer.memoryStorage();
+const allowedImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif']);
+const allowedImageMimeTypes = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif'
+]);
 
 /**
  * Validates that uploaded files are supported images.
@@ -15,10 +25,11 @@ const storage = multer.memoryStorage();
  * @returns {void}
  */
 function imageFileFilter(req, file, callback) {
-  const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.mimetype);
+  const extension = path.extname(file.originalname || '').toLowerCase();
+  const isImage = allowedImageMimeTypes.has(String(file.mimetype).toLowerCase()) || allowedImageExtensions.has(extension);
 
   if (!isImage) {
-    callback(new Error('Only JPEG, PNG, and WEBP image files are supported.'));
+    callback(new Error('Only JPG, PNG, WEBP, HEIC, and HEIF image files are supported.'));
     return;
   }
 
@@ -32,7 +43,7 @@ const upload = multer({
   storage,
   fileFilter: imageFileFilter,
   limits: {
-    fileSize: 15 * 1024 * 1024,
+    fileSize: 30 * 1024 * 1024,
     files: 20
   }
 });

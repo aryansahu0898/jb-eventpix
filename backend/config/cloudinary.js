@@ -10,6 +10,7 @@ const cloudinary = require('cloudinary').v2;
 const storageProvider = process.env.STORAGE_PROVIDER || 'cloudinary';
 const localUploadRoot = path.join(__dirname, '../uploads');
 const isLocalStorage = storageProvider === 'local';
+const allowLocalStorageFallback = process.env.ALLOW_LOCAL_STORAGE_FALLBACK !== 'false';
 
 // Section: Base Configuration
 cloudinary.config({
@@ -18,6 +19,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true
 });
+
+/**
+ * Returns whether Cloudinary has enough credentials to upload.
+ * @returns {boolean}
+ */
+function isCloudinaryConfigured() {
+  return Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+}
 
 /**
  * Normalizes public ids so they are safe for local filesystem storage.
@@ -59,16 +68,21 @@ async function uploadLocalBuffer(buffer, options = {}) {
 }
 
 /**
- * Uploads an image buffer to the configured storage provider.
+ * Returns whether a public id belongs to local fallback storage.
+ * @param {string} publicId
+ * @returns {boolean}
+ */
+function isLocalPublicId(publicId) {
+  return /\.(jpe?g|png|webp|heic|heif)$/i.test(publicId || '');
+}
+
+/**
+ * Uploads an image buffer to Cloudinary.
  * @param {Buffer} buffer
  * @param {import('cloudinary').UploadApiOptions} [options]
- * @returns {Promise<import('cloudinary').UploadApiResponse | { public_id: string, secure_url: string }>}
+ * @returns {Promise<import('cloudinary').UploadApiResponse>}
  */
-function uploadBuffer(buffer, options = {}) {
-  if (isLocalStorage) {
-    return uploadLocalBuffer(buffer, options);
-  }
-
+function uploadCloudinaryBuffer(buffer, options = {}) {
   return new Promise(function resolveUpload(resolve, reject) {
     const uploadStream = cloudinary.uploader.upload_stream({
       folder: 'jb-function-capture',
@@ -90,13 +104,40 @@ function uploadBuffer(buffer, options = {}) {
 }
 
 /**
+ * Uploads an image buffer to the configured storage provider.
+ * @param {Buffer} buffer
+ * @param {import('cloudinary').UploadApiOptions} [options]
+ * @returns {Promise<import('cloudinary').UploadApiResponse | { public_id: string, secure_url: string }>}
+ */
+async function uploadBuffer(buffer, options = {}) {
+  if (isLocalStorage || !isCloudinaryConfigured()) {
+    if (!isLocalStorage && !isCloudinaryConfigured()) {
+      console.warn('Cloudinary is not fully configured. Saving upload to local fallback storage.');
+    }
+
+    return uploadLocalBuffer(buffer, options);
+  }
+
+  try {
+    return await uploadCloudinaryBuffer(buffer, options);
+  } catch (error) {
+    if (!allowLocalStorageFallback) {
+      throw error;
+    }
+
+    console.error('Cloudinary upload failed. Saving upload to local fallback storage:', error.message);
+    return uploadLocalBuffer(buffer, options);
+  }
+}
+
+/**
  * Creates an optimized delivery URL for the configured storage provider.
  * @param {string} publicId
  * @param {number} width
  * @returns {string}
  */
 function buildOptimizedImageUrl(publicId, width) {
-  if (isLocalStorage) {
+  if (isLocalStorage || isLocalPublicId(publicId)) {
     return `/uploads/${publicId}`;
   }
 
@@ -121,7 +162,7 @@ function extractPublicId(url) {
     return null;
   }
 
-  if (isLocalStorage) {
+  if (isLocalStorage || url.startsWith('/uploads/')) {
     const parsedLocal = url.match(/\/uploads\/(.+)$/);
     return parsedLocal ? parsedLocal[1].split('?')[0] : null;
   }
@@ -150,7 +191,7 @@ async function deleteAsset(publicId) {
     return;
   }
 
-  if (isLocalStorage) {
+  if (isLocalStorage || isLocalPublicId(publicId)) {
     await fs.rm(path.join(localUploadRoot, publicId), { force: true });
     return;
   }
@@ -169,5 +210,6 @@ module.exports = {
   extractPublicId,
   deleteAsset,
   isLocalStorage,
+  isCloudinaryConfigured,
   localUploadRoot
 };
