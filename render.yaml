@@ -52,3 +52,5 @@ services:
         sync: false
       - key: FACE_MODEL_REMOTE_URL
         value: https://justadudewhohacks.github.io/face-api.js/models
+      - key: FACE_DETECTION_TIMEOUT_MS
+        value: "25000"

@@ -195,6 +195,22 @@
   color: var(--text-muted);
 }
 
+.upload-item[data-state="warning"] {
+  border-color: rgba(195, 58, 24, 0.32);
+}
+
+.upload-item[data-state="warning"] .upload-status {
+  color: var(--warning);
+}
+
+.upload-item[data-state="error"] {
+  border-color: rgba(216, 58, 58, 0.38);
+}
+
+.upload-item[data-state="error"] .upload-status {
+  color: var(--danger);
+}
+
 .progress-bar {
   height: 10px;
   overflow: hidden;

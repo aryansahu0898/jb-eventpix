@@ -482,7 +482,14 @@ async function handleFileSelection(files) {
   for (const file of fileArray) {
     const item = createUploadItem(file.name);
     document.getElementById('upload-list').prepend(item);
-    await uploadSingleFile(eventId, file, item);
+
+    try {
+      await uploadSingleFile(eventId, file, item);
+    } catch (error) {
+      updateUploadItem(item, 100, `Failed: ${error.message}`);
+      item.dataset.state = 'error';
+      window.JBApp.showToast(`${file.name}: ${error.message}`, 'error');
+    }
   }
 
   await loadDashboardData();
@@ -539,6 +546,14 @@ async function uploadSingleFile(eventId, file, item) {
   });
 
   const uploadedImage = response.uploaded && response.uploaded[0];
+
+  if (uploadedImage && uploadedImage.warning) {
+    item.dataset.state = 'warning';
+    updateUploadItem(item, 100, `Uploaded. ${uploadedImage.warning}`);
+    window.JBApp.showToast(uploadedImage.warning, 'warning');
+    return;
+  }
+
   updateUploadItem(item, 100, uploadedImage ? `Completed. Detected ${uploadedImage.faceCount} face(s).` : 'Completed.');
 }
 

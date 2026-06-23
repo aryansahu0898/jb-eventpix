@@ -17,6 +17,7 @@ const detectFaces = require('../utils/faceDetect');
 
 // Section: Router
 const router = express.Router();
+const faceDetectionTimeoutMs = Number(process.env.FACE_DETECTION_TIMEOUT_MS) || 25000;
 
 /**
  * Gets a safe image format from an uploaded filename or mimetype.
@@ -54,18 +55,65 @@ function sendValidationErrors(req, res) {
 }
 
 /**
- * Uploads a single image, runs face detection, and stores descriptors.
+ * Runs face detection with a timeout.
+ * @param {Buffer} imageBuffer
+ * @returns {Promise<Array<{ descriptor: number[], boundingBox: { x: number, y: number, width: number, height: number } }>>}
+ */
+async function detectFacesWithTimeout(imageBuffer) {
+  let timeoutId;
+
+  try {
+    return await Promise.race([
+      detectFaces(imageBuffer),
+      new Promise(function rejectAfterTimeout(resolve, reject) {
+        void resolve;
+        timeoutId = setTimeout(function onTimeout() {
+          reject(new Error(`Face detection timed out after ${faceDetectionTimeoutMs}ms.`));
+        }, faceDetectionTimeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+/**
+ * Runs face detection without blocking the image upload.
+ * @param {Buffer} imageBuffer
+ * @param {string} originalName
+ * @returns {Promise<{ detections: Array<{ descriptor: number[], boundingBox: { x: number, y: number, width: number, height: number } }>, warning: string }>}
+ */
+async function detectFacesSafely(imageBuffer, originalName) {
+  try {
+    return {
+      detections: await detectFacesWithTimeout(imageBuffer),
+      warning: ''
+    };
+  } catch (error) {
+    console.error(`Face detection failed for ${originalName}:`, error.message);
+    return {
+      detections: [],
+      warning: 'Image uploaded, but face detection failed. Check Render logs for model or canvas errors.'
+    };
+  }
+}
+
+/**
+ * Uploads a single image, then runs face detection and stores descriptors when available.
  * @param {string} eventId
  * @param {Express.Multer.File} file
- * @returns {Promise<{ imageId: string, faceCount: number, url: string, thumbnailUrl: string, originalName: string }>}
+ * @returns {Promise<{ imageId: string, faceCount: number, url: string, thumbnailUrl: string, originalName: string, warning?: string }>}
  */
 async function processUploadedImage(eventId, file) {
-  const detections = await detectFaces(file.buffer);
   const uploadResult = await uploadBuffer(file.buffer, {
     folder: `jb-function-capture/events/${eventId}`,
     public_id: `${Date.now()}-${file.originalname.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-')}`,
     format: getImageFormat(file)
   });
+  const detectionResult = await detectFacesSafely(file.buffer, file.originalname);
+  const detections = detectionResult.detections;
 
   const image = await Image.create({
     eventId,
@@ -97,7 +145,8 @@ async function processUploadedImage(eventId, file) {
     faceCount: detections.length,
     url: image.url,
     thumbnailUrl: image.thumbnailUrl,
-    originalName: file.originalname
+    originalName: file.originalname,
+    warning: detectionResult.warning || undefined
   };
 }
 
@@ -126,9 +175,14 @@ async function uploadEventImages(req, res) {
   }
 
   const uploaded = [];
+  const warnings = [];
   for (const file of files) {
     const result = await processUploadedImage(String(event._id), file);
     uploaded.push(result);
+
+    if (result.warning) {
+      warnings.push(`${result.originalName}: ${result.warning}`);
+    }
   }
 
   event.imageCount += uploaded.length;
@@ -136,7 +190,8 @@ async function uploadEventImages(req, res) {
 
   res.status(201).json({
     message: 'Images uploaded successfully.',
-    uploaded
+    uploaded,
+    warnings
   });
 }
 
