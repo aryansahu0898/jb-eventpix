@@ -397,7 +397,57 @@
     window.location.href = '/pages/login.html';
   }
 
-  document.addEventListener('DOMContentLoaded', initThemeToggle);
+  /**
+   * Logs out the current browser session and redirects to login.
+   * @returns {Promise<void>}
+   */
+  async function logout() {
+    const refreshToken = getRefreshToken();
+
+    try {
+      if (refreshToken) {
+        await request('/auth/logout', {
+          method: 'POST',
+          body: { refreshToken }
+        }, false);
+      }
+    } catch (error) {
+      // Local session cleanup should still happen if the server token is already expired.
+    }
+
+    clearSession();
+    redirectToLogin();
+  }
+
+  /**
+   * Shows and wires logout buttons when a user is signed in.
+   * @returns {void}
+   */
+  function initLogoutButtons() {
+    const hasSession = Boolean(getAccessToken() && getCurrentUser());
+
+    document.querySelectorAll('[data-logout-button]').forEach(function bindLogoutButton(button) {
+      button.classList.toggle('hidden', !hasSession);
+
+      if (button.dataset.boundLogout === 'true') {
+        return;
+      }
+
+      button.dataset.boundLogout = 'true';
+      button.addEventListener('click', logout);
+    });
+  }
+
+  /**
+   * Initializes shared UI behavior once the document is ready.
+   * @returns {void}
+   */
+  function initGlobalUi() {
+    initThemeToggle();
+    initLogoutButtons();
+  }
+
+  document.addEventListener('DOMContentLoaded', initGlobalUi);
 
   window.JBApp = {
     API_BASE,
@@ -409,6 +459,7 @@
     getAccessToken,
     getCurrentUser,
     getRefreshToken,
+    logout,
     redirectByRole,
     redirectToLogin,
     request,

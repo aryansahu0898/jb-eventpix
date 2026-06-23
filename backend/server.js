@@ -18,6 +18,7 @@ const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const faceMatchRoutes = require('./routes/faceMatch');
 const imageRoutes = require('./routes/images');
+const { ensureAdminFromEnv } = require('./utils/ensureAdmin');
 
 // Section: App Setup
 const app = express();
@@ -91,6 +92,12 @@ function handleApplicationError(error, req, res, next) {
  */
 async function startServer() {
   await connectDB();
+  const adminResult = await ensureAdminFromEnv();
+
+  if (!adminResult.skipped) {
+    const adminAction = adminResult.created ? 'Created' : 'Updated';
+    console.log(`${adminAction} startup admin account: ${adminResult.email}`);
+  }
 
   app.use(cors({
     origin: validateCorsOrigin,
