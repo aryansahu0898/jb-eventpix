@@ -141,32 +141,7 @@ Use:
 https://your-service-name.onrender.com/
 ```
 
-### 8. Create The First Admin
-
-Register a normal user first:
-
-```text
-https://your-service-name.onrender.com/pages/register.html
-```
-
-Then in MongoDB Atlas:
-
-1. Open `Browse Collections`
-2. Open the `users` collection
-3. Find that user
-4. Change:
-
-```json
-"role": "user"
-```
-
-to:
-
-```json
-"role": "admin"
-```
-
-### 9. Log In As Admin
+### 8. Log In As Admin
 
 Open:
 
@@ -174,13 +149,22 @@ Open:
 https://your-service-name.onrender.com/pages/login.html
 ```
 
-Then go to:
+Click `Login as Admin`, or enter:
+
+```text
+Email: admin@jbeventpix.com
+Password: Admin@12345
+```
+
+The backend creates or updates this admin account automatically when the server starts.
+
+Then the app redirects to:
 
 ```text
 https://your-service-name.onrender.com/pages/admin/dashboard.html
 ```
 
-### 10. Create An Event And Upload Photos
+### 9. Create An Event And Upload Photos
 
 From the admin dashboard:
 
@@ -194,7 +178,7 @@ The backend will:
 - detect faces
 - store descriptors in MongoDB
 
-### 11. Test The Public Search Flow
+### 10. Test The Public Search Flow
 
 1. Open `/pages/events.html`
 2. Select an event
@@ -211,12 +195,12 @@ If you prefer configuring Render without the blueprint:
 - Build Command: `cd backend && npm install`
 - Start Command: `cd backend && npm start`
 - Health Check Path: `/api/health`
-- Node Version: `22.22.0`
+- Node Version: `20.18.0`
 
 ## Important Notes
 
 - The frontend is served by the backend, so one Render web service is enough.
-- The first admin must be promoted manually in MongoDB.
+- The fixed admin is created automatically at startup.
 - `backend/node_modules` should not be committed to GitHub.
 - Node `25.x` is not recommended for this project because native dependency compatibility was unstable during packaging.
 

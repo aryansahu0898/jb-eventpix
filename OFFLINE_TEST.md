@@ -49,9 +49,11 @@ FRONTEND_URL=http://localhost:5000
 You can keep the example admin login for testing:
 
 ```text
-Email: admin@example.com
+Email: admin@jbeventpix.com
 Password: Admin@12345
 ```
+
+The backend also creates or updates this fixed admin account automatically every time the server starts.
 
 ## 3. Install Backend Dependencies
 
@@ -60,14 +62,14 @@ cd "/Users/tikeshkumar/Documents/New project 2/jb-function-capture/backend"
 npm install
 ```
 
-## 4. Create The Admin Account
+## 4. Optional: Create The Admin Account Manually
 
 ```bash
 cd "/Users/tikeshkumar/Documents/New project 2/jb-function-capture/backend"
 npm run create-admin
 ```
 
-This creates or updates the admin user from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env`.
+This uses the same fixed admin login unless you override `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env`.
 
 ## 5. Start The Website
 

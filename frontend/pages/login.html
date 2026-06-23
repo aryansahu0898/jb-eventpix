@@ -32,7 +32,7 @@
       <div class="nav-actions">
         <button class="btn btn-outline theme-toggle" type="button" data-theme-toggle>Dark mode</button>
         <button class="btn btn-outline hidden" type="button" data-logout-button>Logout</button>
-        <a class="btn btn-outline" href="/pages/register.html">Register</a>
+        <a class="btn btn-outline" href="/pages/register.html">Register as User</a>
       </div>
     </div>
   </nav>
@@ -48,6 +48,22 @@
       </div>
       <div class="auth-highlight">
         JWT access and refresh tokens are stored locally in the browser to keep your session active across page loads.
+      </div>
+      <div class="admin-login-card">
+        <div>
+          <strong>Fixed admin login</strong>
+          <span>Email: <code>admin@jbeventpix.com</code></span>
+          <span>Password: <code>Admin@12345</code></span>
+        </div>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          data-fill-admin-login
+          data-admin-email="admin@jbeventpix.com"
+          data-admin-password="Admin@12345"
+        >
+          Login as Admin
+        </button>
       </div>
       <form class="auth-form" data-auth-form data-mode="login" novalidate>
         <div class="input-group">
@@ -69,9 +85,9 @@
           <a class="btn btn-secondary" href="/pages/events.html">Browse Events First</a>
         </div>
       </form>
-      <div class="auth-divider">Need an account?</div>
+      <div class="auth-divider">Public user access</div>
       <div class="auth-footer">
-        <a class="auth-link" href="/pages/register.html">Create a new account</a>
+        <a class="auth-link" href="/pages/register.html">Register as a user to browse events</a>
       </div>
     </section>
   </main>

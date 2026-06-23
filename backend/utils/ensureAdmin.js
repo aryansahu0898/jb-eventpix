@@ -6,6 +6,14 @@ const bcrypt = require('bcryptjs');
 
 const User = require('../models/User');
 
+// Section: Fixed Admin Defaults
+const DEFAULT_ADMIN = Object.freeze({
+  name: 'J.B. EventPix Admin',
+  email: 'admin@jbeventpix.com',
+  mobile: '9999999999',
+  password: 'Admin@12345'
+});
+
 // Section: Environment Helpers
 /**
  * Reads and trims an environment variable.
@@ -17,18 +25,14 @@ function readEnv(name) {
 }
 
 /**
- * Reads a required environment variable.
+ * Reads an environment variable, falling back to the fixed admin default.
  * @param {string} name
+ * @param {string} fallback
  * @returns {string}
  */
-function getRequiredEnv(name) {
+function readEnvOrDefault(name, fallback) {
   const value = readEnv(name);
-
-  if (!value) {
-    throw new Error(`${name} is required.`);
-  }
-
-  return value;
+  return value || fallback;
 }
 
 /**
@@ -41,25 +45,15 @@ function normalizeEmail(email) {
 }
 
 /**
- * Returns whether all admin environment variables are present.
- * @returns {boolean}
- */
-function hasAdminEnvironment() {
-  return ['ADMIN_NAME', 'ADMIN_EMAIL', 'ADMIN_MOBILE', 'ADMIN_PASSWORD'].every(function hasValue(name) {
-    return Boolean(readEnv(name));
-  });
-}
-
-/**
- * Builds and validates the admin payload from environment variables.
+ * Builds and validates the fixed admin payload, allowing env vars to override defaults.
  * @returns {{ name: string, email: string, mobile: string, password: string }}
  */
 function buildAdminPayload() {
   const payload = {
-    name: getRequiredEnv('ADMIN_NAME'),
-    email: normalizeEmail(getRequiredEnv('ADMIN_EMAIL')),
-    mobile: getRequiredEnv('ADMIN_MOBILE'),
-    password: getRequiredEnv('ADMIN_PASSWORD')
+    name: readEnvOrDefault('ADMIN_NAME', DEFAULT_ADMIN.name),
+    email: normalizeEmail(readEnvOrDefault('ADMIN_EMAIL', DEFAULT_ADMIN.email)),
+    mobile: readEnvOrDefault('ADMIN_MOBILE', DEFAULT_ADMIN.mobile),
+    password: readEnvOrDefault('ADMIN_PASSWORD', DEFAULT_ADMIN.password)
   };
 
   if (!/^\S+@\S+\.\S+$/.test(payload.email)) {
@@ -111,20 +105,12 @@ async function upsertAdmin(payload) {
 }
 
 /**
- * Creates or updates an admin account using environment variables.
+ * Creates or updates the fixed admin account during startup.
  * @param {{ required?: boolean }} [options]
  * @returns {Promise<{ skipped: boolean, created?: boolean, email?: string }>}
  */
 async function ensureAdminFromEnv(options = {}) {
-  const required = Boolean(options.required);
-
-  if (!hasAdminEnvironment()) {
-    if (required) {
-      buildAdminPayload();
-    }
-
-    return { skipped: true };
-  }
+  void options;
 
   const result = await upsertAdmin(buildAdminPayload());
   return {

@@ -97,8 +97,45 @@
   font-size: 0.92rem;
 }
 
+.admin-login-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(229, 31, 47, 0.24);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-login-card div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-login-card span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-login-card code {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.theme-dark .admin-login-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 @media (max-width: 560px) {
   .auth-card {
     padding: 1.5rem;
+  }
+
+  .admin-login-card {
+    grid-template-columns: 1fr;
   }
 }

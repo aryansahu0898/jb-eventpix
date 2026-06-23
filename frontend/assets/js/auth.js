@@ -17,16 +17,11 @@ function initAuthPage() {
     return;
   }
 
-  const currentUser = window.JBApp.getCurrentUser();
-  if (currentUser && window.JBApp.getAccessToken()) {
-    window.JBApp.redirectByRole(currentUser);
-    return;
-  }
-
   const mode = form.dataset.mode;
 
   bindFieldValidation(form, mode);
   bindForgotPassword();
+  bindFixedAdminLogin(form, mode);
   form.addEventListener('submit', function onSubmit(event) {
     handleSubmit(event, form, mode).catch(function onError(error) {
       window.JBApp.showToast(error.message, 'error');
@@ -47,6 +42,33 @@ function bindFieldValidation(form, mode) {
         validateField(input, form, mode);
       });
     });
+  });
+}
+
+/**
+ * Binds the fixed admin login helper button.
+ * @param {HTMLFormElement} form
+ * @param {'login' | 'register'} mode
+ * @returns {void}
+ */
+function bindFixedAdminLogin(form, mode) {
+  const button = document.querySelector('[data-fill-admin-login]');
+
+  if (!button || mode !== 'login') {
+    return;
+  }
+
+  button.addEventListener('click', function submitAdminCredentials() {
+    const emailInput = form.querySelector('[name="email"]');
+    const passwordInput = form.querySelector('[name="password"]');
+
+    emailInput.value = button.dataset.adminEmail || 'admin@jbeventpix.com';
+    passwordInput.value = button.dataset.adminPassword || 'Admin@12345';
+
+    validateField(emailInput, form, mode);
+    validateField(passwordInput, form, mode);
+    window.JBApp.showToast('Signing in with the fixed admin account.', 'info');
+    form.requestSubmit();
   });
 }
 
