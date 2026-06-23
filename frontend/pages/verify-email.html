@@ -1,0 +1,59 @@
+<!--
+  verify-email.html
+  -----------------
+  Email verification landing page.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email | J.B. EventPix</title>
+  <link rel="icon" type="image/jpeg" href="/assets/images/jb-eventpix-logo.jpeg">
+  <link rel="apple-touch-icon" href="/assets/images/jb-eventpix-logo.jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/auth.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="page-shell navbar-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/assets/images/jb-eventpix-logo.jpeg" alt="">
+        </span>
+        <span class="brand-copy">
+          <span class="brand-name">J.B. EventPix</span>
+          <span class="brand-subtitle">Email verification</span>
+        </span>
+      </a>
+      <div class="nav-actions">
+        <button class="btn btn-outline theme-toggle" type="button" data-theme-toggle>Dark mode</button>
+        <a class="btn btn-outline" href="/pages/login.html">Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="auth-page page-shell">
+    <section class="auth-card verification-card" id="verification-panel" data-state="loading">
+      <div class="auth-header">
+        <span class="eyebrow">Account verification</span>
+        <h1 class="auth-title" id="verification-title">Checking your link</h1>
+        <p class="auth-subtitle" id="verification-message">
+          Please wait while we verify your account.
+        </p>
+      </div>
+      <div class="face-loader" id="verification-loader" aria-label="Loading"></div>
+      <div class="auth-actions hidden" id="verification-action">
+        <a class="btn btn-primary" href="/pages/login.html">Go to Login</a>
+        <a class="btn btn-secondary" href="/pages/register.html">Create New Account</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/verifyEmail.js"></script>
+</body>
+</html>

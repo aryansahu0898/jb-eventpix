@@ -97,6 +97,8 @@ async function startServer() {
   if (!adminResult.skipped) {
     const adminAction = adminResult.created ? 'Created' : 'Updated';
     console.log(`${adminAction} startup admin account: ${adminResult.email}`);
+  } else if (adminResult.reason) {
+    console.warn(`Skipped startup admin account: ${adminResult.reason}`);
   }
 
   app.use(cors({

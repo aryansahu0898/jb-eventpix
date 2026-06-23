@@ -143,20 +143,20 @@ https://your-service-name.onrender.com/
 
 ### 8. Log In As Admin
 
+Set the private admin values in your host environment first:
+
+```env
+ADMIN_EMAIL=your_private_admin_email
+ADMIN_PASSWORD=your_private_admin_password
+```
+
 Open:
 
 ```text
 https://your-service-name.onrender.com/pages/login.html
 ```
 
-Click `Login as Admin`, or enter:
-
-```text
-Email: admin@jbeventpix.com
-Password: Admin@12345
-```
-
-The backend creates or updates this admin account automatically when the server starts.
+Enter the private admin email and password from your host environment. The backend creates or updates this admin account automatically when the server starts.
 
 Then the app redirects to:
 
@@ -197,10 +197,21 @@ If you prefer configuring Render without the blueprint:
 - Health Check Path: `/api/health`
 - Node Version: `20.18.0`
 
+For user email verification, also configure SMTP:
+
+- `PUBLIC_BASE_URL`
+- `EMAIL_HOST`
+- `EMAIL_PORT`
+- `EMAIL_SECURE`
+- `EMAIL_USER`
+- `EMAIL_PASS`
+- `EMAIL_FROM`
+
 ## Important Notes
 
 - The frontend is served by the backend, so one Render web service is enough.
 - The fixed admin is created automatically at startup.
+- User registration requires email verification before login.
 - `backend/node_modules` should not be committed to GitHub.
 - Node `25.x` is not recommended for this project because native dependency compatibility was unstable during packaging.
 

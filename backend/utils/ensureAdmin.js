@@ -10,8 +10,7 @@ const User = require('../models/User');
 const DEFAULT_ADMIN = Object.freeze({
   name: 'J.B. EventPix Admin',
   email: 'admin@jbeventpix.com',
-  mobile: '9999999999',
-  password: 'Admin@12345'
+  mobile: '9999999999'
 });
 
 // Section: Environment Helpers
@@ -45,15 +44,39 @@ function normalizeEmail(email) {
 }
 
 /**
+ * Returns the configured admin password.
+ * @param {boolean} required
+ * @returns {string}
+ */
+function getAdminPassword(required) {
+  const password = readEnv('ADMIN_PASSWORD');
+
+  if (password) {
+    return password;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    return 'Admin@12345';
+  }
+
+  if (required) {
+    throw new Error('ADMIN_PASSWORD is required to create the production admin account.');
+  }
+
+  return '';
+}
+
+/**
  * Builds and validates the fixed admin payload, allowing env vars to override defaults.
+ * @param {{ required?: boolean }} [options]
  * @returns {{ name: string, email: string, mobile: string, password: string }}
  */
-function buildAdminPayload() {
+function buildAdminPayload(options = {}) {
   const payload = {
     name: readEnvOrDefault('ADMIN_NAME', DEFAULT_ADMIN.name),
     email: normalizeEmail(readEnvOrDefault('ADMIN_EMAIL', DEFAULT_ADMIN.email)),
     mobile: readEnvOrDefault('ADMIN_MOBILE', DEFAULT_ADMIN.mobile),
-    password: readEnvOrDefault('ADMIN_PASSWORD', DEFAULT_ADMIN.password)
+    password: getAdminPassword(Boolean(options.required))
   };
 
   if (!/^\S+@\S+\.\S+$/.test(payload.email)) {
@@ -110,9 +133,14 @@ async function upsertAdmin(payload) {
  * @returns {Promise<{ skipped: boolean, created?: boolean, email?: string }>}
  */
 async function ensureAdminFromEnv(options = {}) {
-  void options;
+  if (!getAdminPassword(Boolean(options.required))) {
+    return {
+      skipped: true,
+      reason: 'ADMIN_PASSWORD is not configured.'
+    };
+  }
 
-  const result = await upsertAdmin(buildAdminPayload());
+  const result = await upsertAdmin(buildAdminPayload(options));
   return {
     skipped: false,
     created: result.created,

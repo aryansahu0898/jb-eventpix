@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  emailVerificationToken: {
+    type: String,
+    default: ''
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -43,5 +51,7 @@ const userSchema = new mongoose.Schema({
 }, {
   versionKey: false
 });
+
+userSchema.index({ emailVerificationToken: 1 }, { sparse: true });
 
 module.exports = mongoose.model('User', userSchema);

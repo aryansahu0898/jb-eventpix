@@ -3,12 +3,14 @@
  */
 
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 
 const User = require('../models/User');
+const { sendVerificationEmail } = require('../utils/email');
 
 // Section: Router
 const router = express.Router();
@@ -55,6 +57,29 @@ function sendValidationErrors(req, res) {
 }
 
 /**
+ * Hashes a verification token before storing it.
+ * @param {string} token
+ * @returns {string}
+ */
+function hashVerificationToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Creates a raw email token and its database-safe hash.
+ * @returns {{ token: string, hashedToken: string, expiresAt: Date }}
+ */
+function createEmailVerificationToken() {
+  const token = crypto.randomBytes(32).toString('hex');
+
+  return {
+    token,
+    hashedToken: hashVerificationToken(token),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  };
+}
+
+/**
  * Builds a signed access token for API requests.
  * @param {string} userId
  * @param {string} role
@@ -97,16 +122,26 @@ async function registerUser(req, res) {
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
+  const verification = createEmailVerificationToken();
   const user = await User.create({
     name,
     email,
     mobile,
     password: hashedPassword,
-    isVerified: true
+    isVerified: false,
+    emailVerificationToken: verification.hashedToken,
+    emailVerificationExpires: verification.expiresAt
   });
 
+  try {
+    await sendVerificationEmail(user, verification.token);
+  } catch (error) {
+    await User.findByIdAndDelete(user._id);
+    throw error;
+  }
+
   res.status(201).json({
-    message: 'Registration successful.',
+    message: 'Registration successful. Please check your email to verify your account before signing in.',
     user: {
       id: user._id,
       name: user.name,
@@ -140,6 +175,11 @@ async function loginUser(req, res) {
 
   if (!isMatch) {
     res.status(401).json({ message: 'Invalid email or password.' });
+    return;
+  }
+
+  if (user.role !== 'admin' && !user.isVerified) {
+    res.status(403).json({ message: 'Please verify your email address before signing in.' });
     return;
   }
 
@@ -193,6 +233,12 @@ async function refreshSession(req, res) {
       return;
     }
 
+    if (user.role !== 'admin' && !user.isVerified) {
+      await RefreshToken.deleteOne({ token: refreshToken });
+      res.status(403).json({ message: 'Please verify your email address before continuing.' });
+      return;
+    }
+
     res.json({
       accessToken: createAccessToken(String(user._id), user.role)
     });
@@ -217,6 +263,63 @@ async function logoutUser(req, res) {
   res.json({ message: 'Logout successful.' });
 }
 
+/**
+ * Verifies a user email address using a token from email.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+async function verifyEmail(req, res) {
+  if (sendValidationErrors(req, res)) {
+    return;
+  }
+
+  const hashedToken = hashVerificationToken(req.body.token);
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpires: { $gt: new Date() }
+  });
+
+  if (!user) {
+    res.status(400).json({ message: 'Verification link is invalid or has expired.' });
+    return;
+  }
+
+  user.isVerified = true;
+  user.emailVerificationToken = '';
+  user.emailVerificationExpires = null;
+
+  await user.save();
+  res.json({ message: 'Email verified successfully. You can now sign in.' });
+}
+
+/**
+ * Sends a fresh verification email to an unverified account.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+async function resendVerificationEmail(req, res) {
+  if (sendValidationErrors(req, res)) {
+    return;
+  }
+
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user || user.isVerified) {
+    res.json({ message: 'If this email needs verification, a new verification link has been sent.' });
+    return;
+  }
+
+  const verification = createEmailVerificationToken();
+  user.emailVerificationToken = verification.hashedToken;
+  user.emailVerificationExpires = verification.expiresAt;
+  await user.save();
+
+  await sendVerificationEmail(user, verification.token);
+  res.json({ message: 'If this email needs verification, a new verification link has been sent.' });
+}
+
 router.post('/register', [
   body('name').trim().notEmpty().withMessage('Full name is required.').escape(),
   body('email').trim().isEmail().withMessage('A valid email is required.').normalizeEmail(),
@@ -237,6 +340,18 @@ router.post('/refresh', [
   body('refreshToken').trim().notEmpty().withMessage('Refresh token is required.')
 ], function refreshHandler(req, res, next) {
   refreshSession(req, res).catch(next);
+});
+
+router.post('/verify-email', [
+  body('token').trim().isLength({ min: 32 }).withMessage('A valid verification token is required.')
+], function verifyEmailHandler(req, res, next) {
+  verifyEmail(req, res).catch(next);
+});
+
+router.post('/resend-verification', [
+  body('email').trim().isEmail().withMessage('A valid email is required.').normalizeEmail()
+], function resendVerificationHandler(req, res, next) {
+  resendVerificationEmail(req, res).catch(next);
 });
 
 router.post('/logout', [

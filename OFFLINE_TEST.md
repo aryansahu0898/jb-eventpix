@@ -46,7 +46,7 @@ STORAGE_PROVIDER=local
 FRONTEND_URL=http://localhost:5000
 ```
 
-You can keep the example admin login for testing:
+For local testing only, the backend falls back to this admin login if `ADMIN_PASSWORD` is not set:
 
 ```text
 Email: admin@jbeventpix.com

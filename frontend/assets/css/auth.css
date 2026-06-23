@@ -67,6 +67,15 @@
   color: var(--yellow);
 }
 
+.button-link {
+  display: inline;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
@@ -85,6 +94,9 @@
 }
 
 .auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-top: 1.5rem;
   text-align: center;
   color: var(--text-muted);
@@ -97,45 +109,23 @@
   font-size: 0.92rem;
 }
 
-.admin-login-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 1rem;
-  margin: 1rem 0;
-  padding: 1rem;
-  border: 1px solid rgba(229, 31, 47, 0.24);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: var(--shadow-sm);
-}
-
-.admin-login-card div {
+.verification-card {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  align-items: flex-start;
+  gap: 1.25rem;
 }
 
-.admin-login-card span {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.verification-card[data-state="success"] {
+  border-color: rgba(32, 135, 95, 0.35);
 }
 
-.admin-login-card code {
-  color: var(--text);
-  font-weight: 800;
-}
-
-.theme-dark .admin-login-card {
-  background: rgba(255, 255, 255, 0.06);
+.verification-card[data-state="error"] {
+  border-color: rgba(216, 58, 58, 0.35);
 }
 
 @media (max-width: 560px) {
   .auth-card {
     padding: 1.5rem;
-  }
-
-  .admin-login-card {
-    grid-template-columns: 1fr;
   }
 }
